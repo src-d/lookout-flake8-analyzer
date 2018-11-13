@@ -1,0 +1,58 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: lookout-flake8-analyzer
+  labels:
+    app: flake8-analyzer
+    release: lookout
+spec:
+  type: ClusterIP
+  ports:
+    - port: 10304
+      targetPort: 10304
+      protocol: TCP
+  selector:
+    app: flake8-analyzer
+    release: lookout
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: lookout-flake8-analyzer
+  labels:
+    app: flake8-analyzer
+    release: lookout
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flake8-analyzer
+      release: lookout
+  template:
+    metadata:
+      labels:
+        app: flake8-analyzer
+        release: lookout
+    spec:
+      containers:
+        - name: flake8-analyzer
+          image: "srcd/lookout-flake8-analyzer:v0.0.1"
+          imagePullPolicy: Always
+          env:
+            - name: FLAKE8_DATA_SERVICE_URL
+              value: "ipv4://lookout:10301"
+            - name: FLAKE8_PORT
+              value: "10304"
+            - name: FLAKE8_LOG_LEVEL
+              value: "debug"
+          ports:
+            - containerPort: 10304
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: 10304
+          readinessProbe:
+            tcpSocket:
+              port: 10304
+      nodeSelector:
+        srcd.host/type: worker
